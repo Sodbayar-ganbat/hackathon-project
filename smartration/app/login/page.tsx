@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Utensils, Eye, EyeOff } from "lucide-react"
+import { supabase } from "@/lib/supabaseClient"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -34,22 +35,45 @@ export default function LoginPage() {
     setError("")
 
     try {
-      // Simulate login process
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      })
 
-      // In a real app, you'd validate credentials here
-      if (formData.email && formData.password) {
-        // Simulate successful login
-        localStorage.setItem("user", JSON.stringify({ email: formData.email }))
-        router.push("/upload")
-      } else {
-        setError("Please fill in all fields")
+      if (error) {
+        setError(error.message)
+      } else if (data.user) {
+        // Check if user has completed onboarding
+        try {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('onboarding_completed')
+            .eq('id', data.user.id)
+            .single()
+
+          if (profileError) {
+            console.error("Profile fetch error:", profileError)
+            // If profiles table doesn't exist or other error, treat as new user
+            router.push("/onboarding")
+            return
+          }
+
+          if (profile && profile.onboarding_completed) {
+            // Existing user - go to upload
+            router.push("/upload")
+          } else {
+            // New user - go to onboarding
+            router.push("/onboarding")
+          }
+        } catch (err) {
+          console.error("Profile check error:", err)
+          // Default to onboarding for new users
+          router.push("/onboarding")
+        }
       }
-    } catch (
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      _err
-    ) {
+    } catch (err) {
       setError("Login failed. Please try again.")
+      console.error("Login error:", err)
     } finally {
       setIsLoading(false)
     }
