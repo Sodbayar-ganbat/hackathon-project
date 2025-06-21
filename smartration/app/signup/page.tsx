@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Utensils, Eye, EyeOff, Check } from "lucide-react"
+import { supabase } from "@/lib/supabaseClient"
 
 export default function SignupPage() {
   const router = useRouter()
@@ -72,26 +73,45 @@ export default function SignupPage() {
     setError("")
 
     try {
-      // Simulate account creation
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-
-      // Store user data (in a real app, this would be sent to your backend)
-      const userData = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
+      const { data, error } = await supabase.auth.signUp({
         email: formData.email,
-        isNewUser: true,
+        password: formData.password,
+        options: {
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+          }
+        }
+      })
+
+      if (error) {
+        setError(error.message)
+      } else if (data.user) {
+        // Try to create profile record for new user
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: data.user.id,
+              email: formData.email,
+              first_name: formData.firstName,
+              last_name: formData.lastName,
+              onboarding_completed: false,
+            }
+          ])
+
+        if (profileError) {
+          console.error("Profile creation error:", profileError)
+          // Don't block the signup process if profile creation fails
+          // The trigger function should handle this automatically
+        }
+
+        // New user - redirect to onboarding
+        router.push("/onboarding")
       }
-
-      localStorage.setItem("user", JSON.stringify(userData))
-
-      // Redirect to onboarding
-      router.push("/onboarding")
-    } catch (
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      _err
-    ) {
+    } catch (err) {
       setError("Sign up failed. Please try again.")
+      console.error("Signup error:", err)
     } finally {
       setIsLoading(false)
     }

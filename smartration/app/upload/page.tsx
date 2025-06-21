@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card"
 import { Receipt, CheckCircle } from "lucide-react"
 import { processImages } from "@/app/actions"
 import ImageUploader from "@/components/image-uploader"
+import ProtectedRoute from "@/components/protected-route"
 
 interface ReceiptItem {
   name: string
