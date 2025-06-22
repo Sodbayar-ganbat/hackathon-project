@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { ChevronLeft, ChevronRight, Clock, DollarSign, RefreshCw } from "lucide-react"
 import DashboardLayout from "@/components/dashboard-layout"
 
+// hehahahhhahahahahhaahaha
 const mockMeals = {
   "Day 1": [
     { name: "Veggie Scramble", type: "Breakfast", time: 15, cost: 2.45 },
